@@ -22,7 +22,7 @@ app.post("/users", async (req, res) => {
     const user = await User.create(req.body);
     res.status(201).json(user);
   } catch (error) {
-    res.status(400).json({ erro: erro.message });
+    res.status(400).json({ erro: error.message });
   }
 });
 
@@ -37,7 +37,7 @@ app.put("/users/:id", async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    res.status(400).json({ erro: erro.message });
+    res.status(400).json({ erro: error.message });
   }
 });
 
