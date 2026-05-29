@@ -1,84 +1,80 @@
 import express from "express";
+import bcrypt from "bcrypt";
 import conectar from "./model/db.js";
 import { User } from "./model/user.js";
-import bcrypt from "bcrypt";
 import validarBodyUsuario from "./middleware/validarBodyUsuario.js";
+import erros from "./middleware/erros.js";
 
 const app = express();
 const salt = 12;
 
 app.use(express.json());
 
-app.get("/users", async (req, res) => {
+app.get("/users", async (req, res, next) => {
   try {
-    const users = await User.find();
+    const users = await User.find().select("-password");
     res.json(users);
   } catch (error) {
-    res.status(500).json({ error: "Ocorreu um erro inesperado no servidor." });
+    next(error);
   }
 });
 
-app.get("/users/:id", async (req, res) => {
+app.get("/users/:id", async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).select("-password");
 
     if (!user)
       return res.status(404).json({ error: "Usuário não encontrado." });
 
     res.json(user);
   } catch (error) {
-    res.status(500).json({ error: "Ocorreu um erro inesperado no servidor." });
+    next(error);
   }
 });
 
-app.post("/users", validarBodyUsuario, async (req, res) => {
+app.post("/users", validarBodyUsuario, async (req, res, next) => {
   try {
     req.body.password = await bcrypt.hash(req.body.password, salt);
     const user = await User.create(req.body);
+    user.password = undefined;
     res.status(201).json(user);
   } catch (error) {
-    if (error.code === 11000)
-      return res.status(400).json({
-        error: { email: "Este email já está cadastrado no sistema." },
-      });
-
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 });
 
-app.put("/users/:id", validarBodyUsuario, async (req, res) => {
+app.put("/users/:id", validarBodyUsuario, async (req, res, next) => {
   try {
     req.body.password = await bcrypt.hash(req.body.password, salt);
     const user = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
-    });
+    }).select("-password");
 
     if (!user)
       return res.status(404).json({ error: "Usuário não encontrado." });
 
     res.json(user);
   } catch (error) {
-    if (error.code === 11000)
-      return res.status(400).json({
-        error: { email: "Este email já está cadastrado no sistema." },
-      });
-
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 });
 
-app.delete("/users/:id", async (req, res) => {
+app.delete("/users/:id", async (req, res, next) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findByIdAndDelete(req.params.id).select(
+      "-password",
+    );
 
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
 
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ error: "Ocorreu um erro inesperado no servidor." });
+    next(error);
   }
 });
+
+app.use(erros);
 
 (async () => {
   await conectar();
