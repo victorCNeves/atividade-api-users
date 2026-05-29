@@ -6,16 +6,16 @@ export default async (req, res, next) => {
     erros.name = "O nome é obrigatório.";
   }
 
-  const emailRegex = "/^[\w-\.\+]+@([\w-]+\.)+[\w-]{2,4}$/";
+  const emailRegex = /^[\w-\.\+]+@([\w-]+\.)+[\w-]{2,4}$/;
   if (!email || email.trim() === "") {
     erros.email = "O e-mail é obrigatório.";
-  } else if (email.match(emailRegex)) {
+  } else if (!email.match(emailRegex)) {
     erros.email = "Insira um e-mail válido.";
   }
 
   if (!password || password.trim() === "") {
     erros.password = "A senha é obrigatória.";
-  } else if (password.length() < 8) {
+  } else if (password.length < 8) {
     erros.password = "A senha deve conter no mínimo 8 caracteres.";
   }
 
